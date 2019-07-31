@@ -1,0 +1,33 @@
+{
+    "name": "arillo/silverstripe-shortpixel",
+    "description": "Shortpixel integration for SilverStripe CMS.",
+    "type": "silverstripe-vendormodule",
+    "homepage": "https://github.com/arillo/silverstripe-shortpixel",
+    "keywords": [
+        "silverstripe",
+        "shortpixel",
+        "shortpixel"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sebastian Fischer",
+            "email": "sf@arillo.ch"
+        }
+    ],
+    "require": {
+        "silverstripe/framework": "^4",
+        "shortpixel/shortpixel-php": "*"
+    },
+    "extra": {
+        "installer-name": "shortpixel"
+    },
+    "autoload": {
+        "psr-4": {
+            "Arillo\\Shortpixel\\": "src/"
+        }
+    },
+    "support": {
+        "issues": "https://github.com/arillo/silverstripe-shortpixel/issues"
+    }
+}
