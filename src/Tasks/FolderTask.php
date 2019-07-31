@@ -1,11 +1,13 @@
 <?php
 namespace Arillo\Shortpixel\Tasks;
 
+use Psr\Log\LoggerInterface;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Dev\Debug;
 use SilverStripe\Assets\File;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Core\Environment;
+use Arillo\Shortpixel\Shortpixel;
 use Exception;
 
 /**
@@ -37,6 +39,11 @@ class FolderTask extends BuildTask
         'WAIT' => 300,
     ];
 
+    private static $dependencies = [
+        'logger' => '%$' . LoggerInterface::class,
+    ];
+
+
     /**
      * Specify folder names to exclude
      * @var array
@@ -45,6 +52,8 @@ class FolderTask extends BuildTask
 
     protected $title = 'Shortpixel folder task';
     protected $description = 'Run short pixel optimization on a given folder.';
+
+    private $logger;
 
     /**
      * Root folder can be specified by setting, otherwise it will fallback to `ASSETS_PATH`:
@@ -65,13 +74,14 @@ class FolderTask extends BuildTask
     public function run($request)
     {
         set_time_limit(0);
+
         $apiKey = Environment::getEnv('SP_APIKEY');
 
         if (empty($apiKey)) user_error("Env 'SP_APIKEY' not set");
 
         $rootFolder = $this->rootFolder();
 
-        Debug::message("Processing images in {$rootFolder}", true);
+        $this->log("Processing images in {$rootFolder}");
 
         \ShortPixel\setKey($apiKey);
         \ShortPixel\ShortPixel::setOptions($this->config()->shortpixel_options);
@@ -88,42 +98,72 @@ class FolderTask extends BuildTask
                 ->toFiles($rootFolder)
             ;
         } catch (Exception | \ShortPixel\AccountException $e) {
-            Debug::message("ERROR: " . $e->getMessage(), true);
+            $this->log("ERROR: " . $e->getMessage());
             die;
         }
 
         // \SilverStripe\Dev\Debug::dump($result);
 
-        Debug::message("Status code: {$result->status['code']}", true);
-        Debug::message("Status message: {$result->status['message']}", true);
-        Debug::message("Succeeded: " . count($result->succeeded), true);
-        Debug::message("Pending: " . count($result->pending), true);
-        Debug::message("Failed: " . count($result->failed), true);
-        Debug::message("Same: " . count($result->same), true);
+        $this->log("Status code: {$result->status['code']}");
+        $this->log("Status message: {$result->status['message']}");
+        $this->log("Succeeded: " . count($result->succeeded));
+        $this->log("Pending: " . count($result->pending));
+        $this->log("Failed: " . count($result->failed));
+        $this->log("Same: " . count($result->same));
+
+        $manipulatedFiles = array_merge($result->succeeded, $result->pending);
 
         // fix manipulated files in assets store
-        if (count($result->succeeded)) {
-            foreach ($result->succeeded as $fileResult) {
+        if (count($manipulatedFiles)) {
+            sleep(4);
+            foreach ($manipulatedFiles as $fileResult) {
                 $processedFilename = $fileResult->OriginalFile;
                 $processedFilename = substr($processedFilename, strlen($rootFolder) + 1);
 
-                Debug::message("Check needs fix assetstore: {$processedFilename}", true);
-                $file = File::get()->filter('FileFilename', $processedFilename)->limit(1);
-                if ($file->exists()) {
-                    Debug::message("Fixing assetstore: {$processedFilename}", true);
-                    $file = $file->first();
-                    $file->File->setFromLocalFile(
-                        ASSETS_PATH . '/' . $file->FileFilename,
-                        $file->generateFilename()
-                    );
-                    $file->write();
-                    if ($file->isPublished()) $file->publishRecursive();
-                } else {
-                    Debug::message("Skipping: {$processedFilename}", true);
+                $this->log("Check needs fix assets store: {$processedFilename}");
+                $recover = Shortpixel::fix_assetsstore_file($processedFilename);
+
+                switch ($recover) {
+                    case Shortpixel::FILE_RECOVERED:
+                        $this->log("Fixed assets store: {$processedFilename}");
+                        break;
+
+                    default:
+                        $this->log("Skipped: {$processedFilename}, {$recover}");
+                        break;
                 }
             }
         }
         
-        Debug::message("Done", true);
+        $this->log("Done");
     }
+
+    /**
+     * @param  string $message
+     * @return FolderTask
+     */
+    public function log($message, $method = 'notice')
+    {
+        switch (true) {
+             case Environment::isCli():
+                 $this->logger->{$method}('[shortpixel.foldertask] ' . $message);
+                 break;
+
+             default:
+                 Debug::message($message, true);
+                 break;
+         }
+
+         return $this;
+    }
+
+    /**
+     * @param LoggerInterface $logger
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+        return $this;
+    }
+
 }

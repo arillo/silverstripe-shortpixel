@@ -2,6 +2,8 @@
 namespace Arillo\Shortpixel;
 
 use SilverStripe\Core\Environment;
+use SilverStripe\ORM\Queries\SQLSelect;
+use \SilverStripe\Assets\File;
 use Exception;
 
 /**
@@ -9,6 +11,9 @@ use Exception;
  */
 class Shortpixel
 {
+    const FILE_HEALTHY = 'healthy';
+    const FILE_RECOVERED = 'recovered';
+    const FILE_NOT_FOUND = 'file_not_found';
     /**
      * Request api status for your apy key.
      * @return array
@@ -32,5 +37,30 @@ class Shortpixel
         return [
             "Error" => 'Something went wrong'
         ];
+    }
+
+    /**
+     * [fix_assetsstore_file description]
+     * @param  string $fileName
+     * @return string
+     */
+    public static function fix_assetsstore_file(string $fileName)
+    {
+        $files = File::get()->filter('FileFilename', $fileName)->limit(1);
+        if ($files->exists()) {
+            $file = $files->first();
+            if (!$file->File->exists() && file_exists(ASSETS_PATH . '/' . $fileName)) {
+                $file->File->setFromLocalFile(
+                    ASSETS_PATH . '/' . $file->FileFilename,
+                    $file->FileFilename
+                    // $file->generateFilename()
+                );
+                $file->write();
+                if ($file->isPublished()) $file->publishRecursive();
+                return self::FILE_RECOVERED;
+            }
+            return self::FILE_HEALTHY;
+        }
+        return self::FILE_NOT_FOUND;
     }
 }

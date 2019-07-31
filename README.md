@@ -1,5 +1,7 @@
 # Silverstripe Shortpixel
 
+**CAUTION: do not use in production, work in progress!**
+
 It will gradually optimze all images in a given folder (e.g. assets folder) via [shortpixel api](https://shortpixel.com) .
 Purposed to run via cronjob. It will process `MAX_ALLOWED_FILES_PER_CALL` images per run.
 
