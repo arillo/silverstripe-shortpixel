@@ -4,8 +4,15 @@ namespace Arillo\Shortpixel;
 use SilverStripe\Core\Environment;
 use Exception;
 
+/**
+ * @author Bumbus <sf@arillo.ch>
+ */
 class Shortpixel
 {
+    /**
+     * Request api status for your apy key.
+     * @return array
+     */
     public static function get_api_status()
     {
         $apiKey = Environment::getEnv('SP_APIKEY');
