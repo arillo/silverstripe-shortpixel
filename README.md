@@ -36,3 +36,5 @@ Setup an cronjob to execute the task
 ```
 */1 * * * * php vendor/silverstripe/framework/cli-script.php dev/tasks/ShortpixelFolderTask
 ```
+
+Find more information about options & settings in `Arillo\Shortpixel\Tasks\FolderTask`.
