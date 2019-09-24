@@ -7,13 +7,14 @@ use Arillo\Shortpixel\Shortpixel;
 
 /**
  * Add shortpixel stuff to site config.
- * 
+ *
  * @author Bumbus <sf@arillo.ch>
  */
 class SiteConfig extends DataExtension
 {
     private static $db = [
         'ShortpixelFolderTaskDisabled' => 'Boolean',
+        'ShortpixelFolderTaskLastImages' => 'Text',
     ];
 
     public function updateCMSFields(FieldList $fields)

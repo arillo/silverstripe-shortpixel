@@ -14,7 +14,7 @@ use Exception;
  * Runs short pixel optimization on a given folder.
  * It processes MAX_ALLOWED_FILES_PER_CALL per run.
  * Purposed to run via cronjob.
- * 
+ *
  * @author Bumbus <sf@arillo.ch>
  */
 class FolderTask extends BuildTask
@@ -36,7 +36,7 @@ class FolderTask extends BuildTask
     private static $shortpixel_settings = [
         'MAX_ALLOWED_FILES_PER_CALL' => 10,
         'CLIENT_MAX_BODY_SIZE' => 48,
-        'WAIT' => 300,
+        'WAIT' => 500,
     ];
 
     private static $dependencies = [
@@ -58,7 +58,7 @@ class FolderTask extends BuildTask
     /**
      * Root folder can be specified by setting, otherwise it will fallback to `ASSETS_PATH`:
      *     private static $root_folder = "<ABSOLUTE_FOLDER_PATH>";
-     *     
+     *
      * @return string
      */
     public function rootFolder()
@@ -79,13 +79,28 @@ class FolderTask extends BuildTask
 
         if (empty($apiKey)) user_error("Env 'SP_APIKEY' not set");
 
+        $sc = SiteConfig::current_site_config();
         $rootFolder = $this->rootFolder();
 
         $this->log("Processing images in {$rootFolder}");
 
+        $this->log("Check: needs recover images from previous run...");
+        $revoverFromPreviousRun = json_decode($sc->ShortpixelFolderTaskLastImages);
+        if ($revoverFromPreviousRun && count($revoverFromPreviousRun)) {
+            $this->log("Recovering images from previous run.");
+            // Debug::dump(json_decode($sc->ShortpixelFolderTaskLastImages));
+            $this->recoverImages($revoverFromPreviousRun, $rootFolder);
+            $sc->update([
+                'ShortpixelFolderTaskLastImages' => null
+            ])->write();
+        } else {
+            $this->log("Nothing to recover.");
+        }
+
         \ShortPixel\setKey($apiKey);
         \ShortPixel\ShortPixel::setOptions($this->config()->shortpixel_options);
 
+        $this->log("Run Shortpixel call...");
         try {
             $result = \ShortPixel\fromFolder(
                 $rootFolder,
@@ -102,8 +117,6 @@ class FolderTask extends BuildTask
             die;
         }
 
-        // \SilverStripe\Dev\Debug::dump($result);
-
         $this->log("Status code: {$result->status['code']}");
         $this->log("Status message: {$result->status['message']}");
         $this->log("Succeeded: " . count($result->succeeded));
@@ -111,31 +124,42 @@ class FolderTask extends BuildTask
         $this->log("Failed: " . count($result->failed));
         $this->log("Same: " . count($result->same));
 
+        // \SilverStripe\Dev\Debug::dump($result);
+
         $manipulatedFiles = array_merge($result->succeeded, $result->pending);
+
+        $sc->update([
+            'ShortpixelFolderTaskLastImages' => json_encode($manipulatedFiles)
+        ])
+        ->write();
 
         // fix manipulated files in assets store
         if (count($manipulatedFiles)) {
             sleep(4);
-            foreach ($manipulatedFiles as $fileResult) {
-                $processedFilename = $fileResult->OriginalFile;
-                $processedFilename = substr($processedFilename, strlen($rootFolder) + 1);
+            $this->recoverImages($manipulatedFiles, $rootFolder);
+        }
 
-                $this->log("Check needs fix assets store: {$processedFilename}");
-                $recover = Shortpixel::fix_assetsstore_file($processedFilename);
+        $this->log("Done");
+    }
 
-                switch ($recover) {
-                    case Shortpixel::FILE_RECOVERED:
-                        $this->log("Fixed assets store: {$processedFilename}");
-                        break;
+    public function recoverImages($manipulatedFiles, $rootFolder) {
+        foreach ($manipulatedFiles as $fileResult) {
+            $processedFilename = $fileResult->OriginalFile;
+            $processedFilename = substr($processedFilename, strlen($rootFolder) + 1);
 
-                    default:
-                        $this->log("Skipped: {$processedFilename}, {$recover}");
-                        break;
-                }
+            $this->log("Check needs fix assets store: {$processedFilename}");
+            $recover = Shortpixel::fix_assetsstore_file($processedFilename);
+
+            switch ($recover) {
+                case Shortpixel::FILE_RECOVERED:
+                    $this->log("Fixed assets store: {$processedFilename}");
+                    break;
+
+                default:
+                    $this->log("Skipped: {$processedFilename}, {$recover}");
+                    break;
             }
         }
-        
-        $this->log("Done");
     }
 
     /**
