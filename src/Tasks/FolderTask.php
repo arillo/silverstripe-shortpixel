@@ -97,14 +97,16 @@ class FolderTask extends BuildTask
         // run recovering on previously processed images, if enabled.
         if ($this->config()->use_simple_image_recovering) {
             $this->log("Check: needs recover images from previous run...");
-            $revoverFromPreviousRun = json_decode($sc->ShortpixelFolderTaskLastImages);
-            if ($revoverFromPreviousRun && count($revoverFromPreviousRun)) {
+            $recoverFromPreviousRun = json_decode($sc->ShortpixelFolderTaskLastImages);
+            if ($recoverFromPreviousRun && count($recoverFromPreviousRun)) {
                 $this->log("Recovering images from previous run.");
-                // Debug::dump(json_decode($sc->ShortpixelFolderTaskLastImages));
-                $this->recoverImages($revoverFromPreviousRun, $rootFolder);
+                $this->recoverImages($recoverFromPreviousRun, $rootFolder);
+
+                // reset store
                 $sc->update([
                     'ShortpixelFolderTaskLastImages' => null
                 ])->write();
+
             } else {
                 $this->log("Nothing to recover.");
             }
@@ -116,7 +118,6 @@ class FolderTask extends BuildTask
         $this->extend('beforeShortPixelCall');
 
         $this->log("Run Shortpixel call...");
-
         // run shortpixel from folder API call.
         try {
             $result = \ShortPixel\fromFolder(
@@ -135,12 +136,14 @@ class FolderTask extends BuildTask
         }
 
         // log some stats
-        $this->log("Status code: {$result->status['code']}");
-        $this->log("Status message: {$result->status['message']}");
-        $this->log("Succeeded: " . count($result->succeeded));
-        $this->log("Pending: " . count($result->pending));
-        $this->log("Failed: " . count($result->failed));
-        $this->log("Same: " . count($result->same));
+        $this
+            ->log("Status code: {$result->status['code']}")
+            ->log("Status message: {$result->status['message']}")
+            ->log("Succeeded: " . count($result->succeeded))
+            ->log("Pending: " . count($result->pending))
+            ->log("Failed: " . count($result->failed))
+            ->log("Same: " . count($result->same))
+        ;
 
         $this->extend('afterShortPixelCall', $result);
 
