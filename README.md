@@ -1,5 +1,11 @@
 # Silverstripe Shortpixel
 
+[![Latest Stable Version](https://poser.pugx.org/arillo/silverstripe-shortpixel/v/stable)](https://packagist.org/packages/arillo/silverstripe-shortpixel)
+
+[![Total Downloads](https://poser.pugx.org/arillo/silverstripe-shortpixel/downloads)](https://packagist.org/packages/arillo/silverstripe-shortpixel)
+
+[![License](https://poser.pugx.org/arillo/silverstripe-shortpixel/license)](https://packagist.org/packages/arillo/silverstripe-shortpixel)
+
 **CAUTION: use at your own risk!**
 
 It will gradually optimze all images in a given folder (e.g. assets folder) via [shortpixel api](https://shortpixel.com) .
