@@ -7,7 +7,7 @@
 **CAUTION: use at your own risk!**
 
 It will gradually optimze all images in a given folder (e.g. assets folder) via [shortpixel api](https://shortpixel.com) .
-Purposed to run via cronjob. It will process `MAX_ALLOWED_FILES_PER_CALL` images per run.
+Purposed to run via cronjob.
 
 Adds a Shortpixel-Tab to your `SiteConfig`, where you can switch off task execution and where you can find api status information.
 
