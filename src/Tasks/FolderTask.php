@@ -113,6 +113,8 @@ class FolderTask extends BuildTask
         \ShortPixel\setKey($apiKey);
         \ShortPixel\ShortPixel::setOptions($this->config()->shortpixel_options);
 
+        $this->extend('beforeShortPixelCall');
+
         $this->log("Run Shortpixel call...");
 
         // run shortpixel from folder API call.
@@ -139,6 +141,8 @@ class FolderTask extends BuildTask
         $this->log("Pending: " . count($result->pending));
         $this->log("Failed: " . count($result->failed));
         $this->log("Same: " . count($result->same));
+
+        $this->extend('afterShortPixelCall', $result);
 
         // merge succeded & pendign images
         $manipulatedFiles = array_merge($result->succeeded, $result->pending);

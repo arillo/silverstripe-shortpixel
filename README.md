@@ -33,6 +33,10 @@ Arillo\Shortpixel\Tasks\FolderTask:
     CLIENT_MAX_BODY_SIZE: 20 # default: 48
     WAIT: 300 # default: 500
 
+  # you can turn off auto file re-hashing, if you want to.
+  # plays nice with beforeShortPixelCall and afterShortPixelCall hooks, to create your own recovery strategy
+  use_simple_image_recovering: false # default true
+
 ```
 
 Setup an cronjob to execute the task:
