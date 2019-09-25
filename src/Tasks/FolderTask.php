@@ -43,12 +43,17 @@ class FolderTask extends BuildTask
         'logger' => '%$' . LoggerInterface::class,
     ];
 
-
     /**
      * Specify folder names to exclude
      * @var array
      */
     private static $exclude_folders = [];
+
+    /**
+     * Turn on simple image recovering / re-hashing
+     * @var bool
+     */
+    private static $use_simple_image_recovering = true;
 
     protected $title = 'Shortpixel folder task';
     protected $description = 'Run short pixel optimization on a given folder.';
@@ -71,9 +76,14 @@ class FolderTask extends BuildTask
         return parent::isEnabled() && !SiteConfig::current_site_config()->ShortpixelFolderTaskDisabled;
     }
 
+    /**
+     * Runs the task.
+     * @param mixed     $request
+     */
     public function run($request)
     {
         set_time_limit(0);
+        $startTime = time();
 
         $apiKey = Environment::getEnv('SP_APIKEY');
 
@@ -84,23 +94,28 @@ class FolderTask extends BuildTask
 
         $this->log("Processing images in {$rootFolder}");
 
-        $this->log("Check: needs recover images from previous run...");
-        $revoverFromPreviousRun = json_decode($sc->ShortpixelFolderTaskLastImages);
-        if ($revoverFromPreviousRun && count($revoverFromPreviousRun)) {
-            $this->log("Recovering images from previous run.");
-            // Debug::dump(json_decode($sc->ShortpixelFolderTaskLastImages));
-            $this->recoverImages($revoverFromPreviousRun, $rootFolder);
-            $sc->update([
-                'ShortpixelFolderTaskLastImages' => null
-            ])->write();
-        } else {
-            $this->log("Nothing to recover.");
+        // run recovering on previously processed images, if enabled.
+        if ($this->config()->use_simple_image_recovering) {
+            $this->log("Check: needs recover images from previous run...");
+            $revoverFromPreviousRun = json_decode($sc->ShortpixelFolderTaskLastImages);
+            if ($revoverFromPreviousRun && count($revoverFromPreviousRun)) {
+                $this->log("Recovering images from previous run.");
+                // Debug::dump(json_decode($sc->ShortpixelFolderTaskLastImages));
+                $this->recoverImages($revoverFromPreviousRun, $rootFolder);
+                $sc->update([
+                    'ShortpixelFolderTaskLastImages' => null
+                ])->write();
+            } else {
+                $this->log("Nothing to recover.");
+            }
         }
 
         \ShortPixel\setKey($apiKey);
         \ShortPixel\ShortPixel::setOptions($this->config()->shortpixel_options);
 
         $this->log("Run Shortpixel call...");
+
+        // run shortpixel from folder API call.
         try {
             $result = \ShortPixel\fromFolder(
                 $rootFolder,
@@ -117,6 +132,7 @@ class FolderTask extends BuildTask
             die;
         }
 
+        // log some stats
         $this->log("Status code: {$result->status['code']}");
         $this->log("Status message: {$result->status['message']}");
         $this->log("Succeeded: " . count($result->succeeded));
@@ -124,10 +140,10 @@ class FolderTask extends BuildTask
         $this->log("Failed: " . count($result->failed));
         $this->log("Same: " . count($result->same));
 
-        // \SilverStripe\Dev\Debug::dump($result);
-
+        // merge succeded & pendign images
         $manipulatedFiles = array_merge($result->succeeded, $result->pending);
 
+        // write stats into siteconfig, for next run for recovering purpose.
         $sc->update([
             'ShortpixelFolderTaskLastImages' => json_encode($manipulatedFiles)
         ])
@@ -136,13 +152,25 @@ class FolderTask extends BuildTask
         // fix manipulated files in assets store
         if (count($manipulatedFiles)) {
             sleep(4);
-            $this->recoverImages($manipulatedFiles, $rootFolder);
+            if ($this->config()->use_simple_image_recovering) {
+                $this->recoverImages($manipulatedFiles, $rootFolder);
+            }
         }
 
-        $this->log("Done");
+        $duration = time() - $startTime;
+        $this->log("Done after {$duration} seconds.");
     }
 
-    public function recoverImages($manipulatedFiles, $rootFolder) {
+    /**
+     * Recover images by regeneration the file hash
+     * @param  array $manipulatedFiles
+     * @param  string $rootFolder
+     * @return FolderTask
+     */
+    public function recoverImages(
+        array $manipulatedFiles,
+        string $rootFolder
+    ) {
         foreach ($manipulatedFiles as $fileResult) {
             $processedFilename = $fileResult->OriginalFile;
             $processedFilename = substr($processedFilename, strlen($rootFolder) + 1);
@@ -160,6 +188,8 @@ class FolderTask extends BuildTask
                     break;
             }
         }
+
+        return $this;
     }
 
     /**
@@ -183,11 +213,11 @@ class FolderTask extends BuildTask
 
     /**
      * @param LoggerInterface $logger
+     * @return FolderTask
      */
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
         return $this;
     }
-
 }

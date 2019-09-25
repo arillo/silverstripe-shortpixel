@@ -1,3 +1,6 @@
 ---
 Name: shortpixelconfig
 ---
+SilverStripe\SiteConfig\SiteConfig:
+  extensions:
+    - Arillo\Shortpixel\Extensions\SiteConfig
