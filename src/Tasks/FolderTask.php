@@ -77,7 +77,7 @@ class FolderTask extends BuildTask
     }
 
     /**
-     * Runs the task.
+     * Run it!
      * @param mixed     $request
      */
     public function run($request)

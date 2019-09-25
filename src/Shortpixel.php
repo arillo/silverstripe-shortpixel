@@ -14,6 +14,7 @@ class Shortpixel
     const FILE_HEALTHY = 'healthy';
     const FILE_RECOVERED = 'recovered';
     const FILE_NOT_FOUND = 'file_not_found';
+
     /**
      * Request api status for your apy key.
      * @return array
@@ -40,7 +41,9 @@ class Shortpixel
     }
 
     /**
-     * [fix_assetsstore_file description]
+     * Fix assetsstore file, re-generates file hashes,
+     * otherwise images seem to be broken in assets admin.
+     *
      * @param  string $fileName
      * @return string
      */

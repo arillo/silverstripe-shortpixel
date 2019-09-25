@@ -37,6 +37,9 @@ Arillo\Shortpixel\Tasks\FolderTask:
   # plays nice with beforeShortPixelCall and afterShortPixelCall hooks, to create your own recovery strategy
   use_simple_image_recovering: false # default true
 
+  # optionally you can set the root folder
+  root_folder: <ABSOLUTE_PATH_TO_ROOT_FOLDER> # default ASSETS_PATH
+
 ```
 
 Setup an cronjob to execute the task:
