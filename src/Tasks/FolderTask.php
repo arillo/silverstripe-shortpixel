@@ -194,7 +194,7 @@ class FolderTask extends BuildTask
     public function log($message, $method = 'notice')
     {
         switch (true) {
-             case Environment::isCli():
+             case method_exists(Environment::class, 'isCli') && Environment::isCli():
                  $this->logger->{$method}('[shortpixel.foldertask] ' . $message);
                  break;
 

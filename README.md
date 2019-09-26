@@ -27,6 +27,11 @@ Name: myshortpixelconfig
 After:
   - '#shortpixelconfig'
 ---
+Arillo\Shortpixel\Shortpixel:
+  # all option in: ShortPixel\ShortPixel::$options
+  options:
+    lossy: 0 # 1 - lossy, 2 - glossy, 0 - lossless
+
 Arillo\Shortpixel\Tasks\FolderTask:
   exclude_folders:
     - '.protected' # omit .protected, default nothing
