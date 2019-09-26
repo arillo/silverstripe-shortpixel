@@ -8,6 +8,7 @@ use SilverStripe\Assets\File;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Core\Environment;
 use Arillo\Shortpixel\Shortpixel;
+use SilverStripe\Core\Config\Config;
 use Exception;
 
 /**
@@ -66,9 +67,10 @@ class FolderTask extends BuildTask
      *
      * @return string
      */
-    public function rootFolder()
+    public static function root_folder()
     {
-        return $this->config()->root_folder ?? ASSETS_PATH;
+        return Config::inst()->get(__CLASS__, 'root_folder') ?? ASSETS_PATH;
+        // return $this->config()->root_folder ?? ASSETS_PATH;
     }
 
     public function isEnabled()
@@ -90,7 +92,7 @@ class FolderTask extends BuildTask
         if (empty($apiKey)) user_error("Env 'SP_APIKEY' not set");
 
         $sc = SiteConfig::current_site_config();
-        $rootFolder = $this->rootFolder();
+        $rootFolder = self::root_folder();
 
         $this->log("Processing images in {$rootFolder}");
 

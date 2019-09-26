@@ -4,7 +4,7 @@
 [![Total Downloads](https://poser.pugx.org/arillo/silverstripe-shortpixel/downloads)](https://packagist.org/packages/arillo/silverstripe-shortpixel)
 [![License](https://poser.pugx.org/arillo/silverstripe-shortpixel/license)](https://packagist.org/packages/arillo/silverstripe-shortpixel)
 
-**CAUTION: use at your own risk!**
+**CAUTION: work in progress, do not use in production!**
 
 It will gradually optimze all images in a given folder (e.g. assets folder) via [shortpixel api](https://shortpixel.com) .
 Purposed to run via cronjob.
