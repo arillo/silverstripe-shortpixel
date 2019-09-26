@@ -3,7 +3,9 @@ namespace Arillo\Shortpixel;
 
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\Queries\SQLSelect;
-use \SilverStripe\Assets\File;
+use SilverStripe\Assets\File;
+use SilverStripe\Core\Config\{Config, Configurable};
+
 use Exception;
 
 /**
@@ -11,9 +13,33 @@ use Exception;
  */
 class Shortpixel
 {
+    use Configurable;
+
+    const ENV_APIKEY = 'SP_APIKEY';
     const FILE_HEALTHY = 'healthy';
     const FILE_RECOVERED = 'recovered';
     const FILE_NOT_FOUND = 'file_not_found';
+
+    /**
+     * Shortpixel options can be specified here @see ShortPixel\ShortPixel::$options:
+     * @var array
+     */
+    private static $options = [
+        'persist_type' => 'text',
+        'lossy' => 0, // 1 - lossy, 2 - glossy, 0 - lossless
+    ];
+
+    public static function init($options = null)
+    {
+        $apiKey = Environment::getEnv(self::ENV_APIKEY);
+
+        if (empty($apiKey)) user_error("Env '" . self::ENV_APIKEY . "' not set");
+
+        \ShortPixel\setKey($apiKey);
+        \ShortPixel\ShortPixel::setOptions(
+            $options ?? Config::inst()->get(__CLASS__, 'options')
+        );
+    }
 
     /**
      * Request api status for your apy key.
@@ -21,8 +47,8 @@ class Shortpixel
      */
     public static function get_api_status()
     {
-        $apiKey = Environment::getEnv('SP_APIKEY');
-        if (empty($apiKey)) user_error("Env 'SP_APIKEY' not set");
+        $apiKey = Environment::getEnv(self::ENV_APIKEY);
+        if (empty($apiKey)) user_error("Env '" . self::ENV_APIKEY . "' not set");
 
         \ShortPixel\setKey($apiKey);
 

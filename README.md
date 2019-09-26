@@ -33,9 +33,9 @@ Arillo\Shortpixel\Tasks\FolderTask:
 
   # configure ShortPixel
   shortpixel_settings:
-    MAX_ALLOWED_FILES_PER_CALL: 5 # default: 10
-    CLIENT_MAX_BODY_SIZE: 20 # default: 48
-    WAIT: 300 # default: 500
+    max_allowed_files_per_call: 5 # default: 10
+    client_max_body_size: 20 # default: 48
+    wait: 300 # default: 500
 
   # you can turn off auto file re-hashing, if you want to.
   # plays nice with beforeShortPixelCall and afterShortPixelCall hooks, to create your own recovery strategy

@@ -7,13 +7,12 @@ use SilverStripe\Dev\Debug;
 use SilverStripe\Assets\File;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Core\Environment;
-use Arillo\Shortpixel\Shortpixel;
 use SilverStripe\Core\Config\Config;
+use Arillo\Shortpixel\Shortpixel;
 use Exception;
 
 /**
  * Runs short pixel optimization on a given folder.
- * It processes MAX_ALLOWED_FILES_PER_CALL per run.
  * Purposed to run via cronjob.
  *
  * @author Bumbus <sf@arillo.ch>
@@ -23,21 +22,13 @@ class FolderTask extends BuildTask
     private static $segment = 'ShortpixelFolderTask';
 
     /**
-     * Shortpixel options can be specified here @see ShortPixel\ShortPixel::$options:
-     * @var array
-     */
-    private static $shortpixel_options = [
-        'persist_type' => 'text'
-    ];
-
-    /**
      * Options for \ShortPixel::fromFolder API call.
      * @var array
      */
     private static $shortpixel_settings = [
-        'MAX_ALLOWED_FILES_PER_CALL' => 10,
-        'CLIENT_MAX_BODY_SIZE' => 48,
-        'WAIT' => 500,
+        'max_allowed_files_per_call' => 10,
+        'client_max_body_size' => 48,
+        'wait' => 500,
     ];
 
     private static $dependencies = [
@@ -70,7 +61,6 @@ class FolderTask extends BuildTask
     public static function root_folder()
     {
         return Config::inst()->get(__CLASS__, 'root_folder') ?? ASSETS_PATH;
-        // return $this->config()->root_folder ?? ASSETS_PATH;
     }
 
     public function isEnabled()
@@ -85,12 +75,10 @@ class FolderTask extends BuildTask
     public function run($request)
     {
         set_time_limit(0);
+
+        Shortpixel::init();
+
         $startTime = time();
-
-        $apiKey = Environment::getEnv('SP_APIKEY');
-
-        if (empty($apiKey)) user_error("Env 'SP_APIKEY' not set");
-
         $sc = SiteConfig::current_site_config();
         $rootFolder = self::root_folder();
 
@@ -114,8 +102,6 @@ class FolderTask extends BuildTask
             }
         }
 
-        \ShortPixel\setKey($apiKey);
-        \ShortPixel\ShortPixel::setOptions($this->config()->shortpixel_options);
 
         $this->extend('beforeShortPixelCall');
 
@@ -124,12 +110,12 @@ class FolderTask extends BuildTask
         try {
             $result = \ShortPixel\fromFolder(
                 $rootFolder,
-                $this->config()->shortpixel_settings['MAX_ALLOWED_FILES_PER_CALL'],
+                $this->config()->shortpixel_settings['max_allowed_files_per_call'],
                 $this->config()->exclude_folders,
                 false,
-                $this->config()->shortpixel_settings['CLIENT_MAX_BODY_SIZE']
+                $this->config()->shortpixel_settings['client_max_body_size']
             )
-                ->wait($this->config()->shortpixel_settings['CLIENT_MAX_BODY_SIZE'])
+                ->wait($this->config()->shortpixel_settings['wait'])
                 ->toFiles($rootFolder)
             ;
         } catch (Exception | \ShortPixel\AccountException $e) {
