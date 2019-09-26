@@ -3,7 +3,9 @@ namespace Arillo\Shortpixel;
 
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\Queries\SQLSelect;
-use \SilverStripe\Assets\File;
+use SilverStripe\Assets\File;
+use SilverStripe\Assets\FilenameParsing\HashFileIDHelper;
+use SilverStripe\AssetAdmin\Controller\AssetAdmin;
 use Exception;
 
 /**
@@ -49,16 +51,26 @@ class Shortpixel
      */
     public static function fix_assetsstore_file(string $fileName)
     {
-        $files = File::get()->filter('FileFilename', $fileName)->limit(1);
+        $searchFilename = $fileName;
+
+        // parse hash filename
+        if ($parsed = (new HashFileIDHelper())->parseFileID($fileName)) {
+            $searchFilename = $parsed->getFilename();
+        }
+
+        $files = File::get()->filter('FileFilename', $searchFilename)->limit(1);
+
+        $filePath = ASSETS_PATH . '/' . $fileName;
         if ($files->exists()) {
             $file = $files->first();
-            if (!$file->File->exists() && file_exists(ASSETS_PATH . '/' . $fileName)) {
+            if (!$file->File->exists() && file_exists($filePath)) {
                 $file->File->setFromLocalFile(
-                    ASSETS_PATH . '/' . $file->FileFilename,
+                    $filePath,
                     $file->FileFilename
                     // $file->generateFilename()
                 );
                 $file->write();
+                AssetAdmin::singleton()->generateThumbnails($file);
                 if ($file->isPublished()) $file->publishRecursive();
                 return self::FILE_RECOVERED;
             }
